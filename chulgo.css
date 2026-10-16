@@ -14,18 +14,50 @@
   src: url("vendor/fonts/GowunBatang-Bold.woff2") format("woff2");
 }
 
+body,
+body *,
+body *::before,
+body *::after {
+  box-sizing: border-box;
+}
+
 body main {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  max-width: none;
+  margin: 0;
   overflow: hidden;
+  border-top: 4px solid var(--spine);
+  padding: 0.45rem 0.75rem 0.4rem;
+}
+
+body h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+@media screen {
+  body:not(.as-print):has(#subtitle:not([hidden])) h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 .work {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
 }
 
@@ -36,9 +68,13 @@ body.is-busy .toolbar {
 .toolbar {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.45rem;
+        gap: 0.4rem;
         align-items: center;
-        margin: 0.2rem 0 0.75rem;
+        margin: 0 0 0.4rem;
+      }
+
+      .toolbar [hidden] {
+        display: none !important;
       }
 
       .toolbar button,
@@ -113,7 +149,7 @@ body.is-busy .toolbar {
       }
 
       .more {
-        flex: 1 1 100%;
+        flex: 0 0 auto;
       }
 
       .more summary {
@@ -124,7 +160,17 @@ body.is-busy .toolbar {
         padding: 0 0.7rem;
         border: 1px solid var(--line);
         background: var(--sheet);
+        list-style: none;
         cursor: pointer;
+      }
+
+      .more summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .more[open] > summary {
+        border-color: var(--spine);
+        color: var(--spine);
       }
 
       .more-row {
@@ -135,7 +181,7 @@ body.is-busy .toolbar {
         padding-top: 0.45rem;
       }
 
-      .more-row input[type="checkbox"] {
+      .toolbar input[type="checkbox"] {
         width: 1.15rem;
         height: 1.15rem;
         min-height: 0;
@@ -150,10 +196,12 @@ body.is-busy .toolbar {
 
       .toolbar button:focus-visible,
       .file-btn:focus-within,
+      .more summary:focus-visible,
       .only-preview:focus-visible,
       .toolbar input:focus-visible,
       .toolbar select:focus-visible,
-      th button:focus-visible {
+      th button:focus-visible,
+      .shots img:focus-visible {
         outline: 2px solid var(--spine);
         outline-offset: 2px;
       }
@@ -176,7 +224,25 @@ body.is-busy .toolbar {
         font-weight: 700;
       }
 
+      #subtitle:not([hidden]) {
+        margin: 0 0 0.25rem;
+        color: var(--ink);
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      #customers:not([hidden]) {
+        margin: 0.35rem 0 0;
+        padding-top: 0.28rem;
+        border-top: 1px solid var(--line);
+        font-size: 0.92rem;
+      }
+
       .facts .warn {
+        flex: 1 0 100%;
+        padding: 0.12rem 0.5rem;
+        background: #f3e4dc;
         color: #7a2e24;
         font-weight: 700;
       }
@@ -188,9 +254,12 @@ body.is-busy .toolbar {
 
       .shots {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 0.45rem;
-        margin: 0 0 0.7rem;
+        margin: 0 0 0.4rem;
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: auto;
       }
 
       .shots[hidden] {
@@ -201,14 +270,34 @@ body.is-busy .toolbar {
         display: block;
         width: auto;
         max-width: 100%;
-        max-height: 8.5rem;
+        max-height: 5.5rem;
+        flex: 0 0 auto;
         background: white;
         border: 1px solid var(--line);
+        cursor: pointer;
+      }
+
+      .shots:has(img.open) {
+        display: block;
+      }
+
+      .shots img.aside {
+        display: none;
+      }
+
+      .shots img.open {
+        width: 100%;
+        height: min(38dvh, 18rem);
+        max-height: none;
+        object-fit: contain;
+        object-position: top center;
+        background: white;
       }
 
       .table-wrap {
         flex: 1 1 auto;
-        min-height: 12rem;
+        min-width: 0;
+        min-height: 0;
         overflow: auto;
         background: var(--sheet);
         border-top: 1px solid var(--line);
@@ -216,10 +305,12 @@ body.is-busy .toolbar {
       }
 
       .empty {
+        width: min(22rem, 100%);
         margin: 0;
-        padding: 3.2rem 1.2rem;
+        padding: 2rem 1.2rem;
         color: var(--quiet);
         text-align: center;
+        white-space: pre-line;
         cursor: pointer;
       }
 
@@ -231,6 +322,11 @@ body.is-busy .toolbar {
         display: flex;
         align-items: center;
         justify-content: center;
+        min-height: 12rem;
+      }
+
+      .table-wrap:has(.empty:not([hidden])) table {
+        display: none;
       }
 
       .table-wrap.drag {
@@ -341,12 +437,12 @@ body.is-busy .toolbar {
 
       @media (max-width: 720px) {
         body main {
-          padding: 0.7rem 0.5rem calc(0.6rem + env(safe-area-inset-bottom));
+          padding: 0.4rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom));
         }
 
         body h1 {
-          font-size: 1.35rem;
-          margin-bottom: 0.35rem;
+          font-size: 1.15rem;
+          margin-bottom: 0.25rem;
         }
 
         .toolbar {
@@ -362,7 +458,15 @@ body.is-busy .toolbar {
           width: auto;
         }
 
-        .toolbar .more summary,
+        .toolbar .file-btn.primary {
+          grid-column: 1 / -1;
+        }
+
+        .toolbar .more summary {
+          width: 100%;
+          justify-content: center;
+        }
+
         .toolbar .more-row button,
         .toolbar .more-row .inline {
           width: auto;
@@ -370,7 +474,8 @@ body.is-busy .toolbar {
 
         .toolbar button,
         .file-btn,
-        .toolbar .inline:not([hidden]) {
+        .toolbar .inline:not([hidden]),
+        .toolbar .more summary {
           box-sizing: border-box;
           display: flex;
           width: 100%;
@@ -394,11 +499,11 @@ body.is-busy .toolbar {
         }
 
         .shots img {
-          max-height: 6.5rem;
+          max-height: 4.75rem;
         }
 
-        .table-wrap {
-          min-height: 16rem;
+        .table-wrap:has(.empty:not([hidden])) {
+          min-height: 10rem;
         }
 
         table {
@@ -478,9 +583,17 @@ body.is-busy .toolbar {
         height: auto;
         max-height: none;
         overflow: visible;
-        max-width: 52rem;
-        margin: 0 auto;
+        max-width: none;
+        margin: 0;
         padding: 1.1rem 1rem 2rem;
+      }
+
+      body.as-print .work,
+      body.as-print .table-wrap {
+        display: block;
+        height: auto;
+        max-height: none;
+        overflow: visible;
       }
 
       body.as-print .only-preview {

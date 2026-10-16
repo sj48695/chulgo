@@ -242,7 +242,11 @@ function subtitleText() {
 function paintActions() {
   const idle = !grid.length;
   document.querySelector(".file-btn").classList.toggle("primary", idle);
-  document.getElementById("print").classList.toggle("primary", !idle);
+  const print = document.getElementById("print");
+  print.hidden = idle;
+  print.classList.toggle("primary", !idle);
+  document.getElementById("suspects").hidden = idle;
+  document.getElementById("brand-label").hidden = idle;
   const empty = document.getElementById("empty");
   empty.hidden = !idle;
   if (!idle) return;
@@ -250,7 +254,7 @@ function paintActions() {
     ? "읽고 있습니다."
     : sourceName
       ? "읽은 줄이 없습니다. 다른 사진을 놓아 주세요."
-      : "사진을 여기에 놓으면 규격순으로 모읍니다.";
+      : "사진을 여기에 놓거나 누르세요.\n같은 규격끼리 모읍니다.";
 }
 
 function addFact(parent, text, kind) {
@@ -364,14 +368,13 @@ function render() {
   const shown = suspectsOnly
     ? rows.filter((item) => heads.some((head, index) => cellIssue(head, item.row[index], item.row, heads, dupes, boxGap)))
     : rows;
-  addFact(status, (suspectsOnly ? shown.length + "/" : "") + rows.length + "줄", "fact");
-  addFact(status, sortLabel(heads));
-  if (boxSum != null) {
-    addFact(status, boxGap ? "BOX 합 " + boxSum + " · 지시서 " + printedBox : "BOX 합 " + boxSum, boxGap ? "warn" : "fact");
-  }
+  if (boxSum != null && boxGap) addFact(status, "BOX 합 " + boxSum + " · 지시서 " + printedBox, "warn");
   if (issues) addFact(status, "확인할 칸 " + issues, "warn");
   if (dupes.size) addFact(status, "같은 코드 " + Array.from(dupes).join(" "), "warn");
   addFact(status, pageWarn(), "warn");
+  addFact(status, (suspectsOnly ? shown.length + "/" : "") + rows.length + "줄", "fact");
+  addFact(status, sortLabel(heads));
+  if (boxSum != null && !boxGap) addFact(status, "BOX 합 " + boxSum, "fact");
   if (sourceName) addFact(status, sourceName);
 
   const thead = document.createElement("thead");
@@ -790,6 +793,8 @@ function showShotImages(urls, names) {
     const img = document.createElement("img");
     img.src = url;
     img.alt = (names && names[index]) || (index + 1) + "쪽 사진";
+    img.title = "누르면 크게 봅니다";
+    img.tabIndex = 0;
     box.append(img);
   });
   box.hidden = urls.length === 0;
@@ -1846,6 +1851,28 @@ document.getElementById("clear").addEventListener("click", () => {
     /* full */
   }
   render();
+});
+
+document.getElementById("shots").addEventListener("click", (event) => {
+  const img = event.target.closest("img");
+  if (!img) return;
+  const box = img.parentElement;
+  const open = img.classList.contains("open");
+  box.querySelectorAll("img").forEach((node) => {
+    node.classList.remove("open", "aside");
+  });
+  if (open) return;
+  img.classList.add("open");
+  box.querySelectorAll("img").forEach((node) => {
+    if (node !== img) node.classList.add("aside");
+  });
+});
+document.getElementById("shots").addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const img = event.target.closest("img");
+  if (!img) return;
+  event.preventDefault();
+  img.click();
 });
 
 const drop = document.getElementById("drop");

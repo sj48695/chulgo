@@ -20,20 +20,19 @@
         color: var(--ink);
         background: var(--paper);
         font-family: "Gowun Batang", "Apple SD Gothic Neo", serif;
-        font-size: 1.125rem;
-        line-height: 1.75;
+        font-size: 1rem;
+        line-height: 1.45;
       }
 
       main {
-        max-width: 52rem;
-        margin: 0 auto;
-        padding: 1.4rem 1rem 3rem;
+        margin: 0;
+        padding: 0.45rem 0.75rem 0.4rem;
       }
 
       h1 {
-        margin: 0 0 0.8rem;
-        font-size: 1.8rem;
-        line-height: 1.25;
+        margin: 0 0 0.35rem;
+        font-size: 1.2rem;
+        line-height: 1.3;
       }
     </style>
   </head>
@@ -49,24 +48,23 @@
             파일 열기
             <input id="file" type="file" multiple accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.heic,.heif,.csv,.tsv,.txt,.xlsx,.xls,text/csv" />
           </label>
-          <button type="button" id="print">인쇄</button>
-          <button type="button" id="orig">원래 순서</button>
-          <button type="button" id="clear" class="quiet">비우기</button>
-          <label class="inline">
-            제목 줄
-            <input id="header-row" type="number" min="1" step="1" value="1" inputmode="numeric" />
-          </label>
+          <button type="button" id="print" hidden>인쇄</button>
+          <button type="button" id="suspects" hidden>확인할 칸만</button>
+          <label class="inline" id="brand-label" hidden><input id="brand-sum" type="checkbox" /> 브랜드 소계</label>
           <label class="inline" id="sheet-label" hidden>
             시트
             <select id="sheet"></select>
           </label>
           <span class="grow"></span>
-          <button type="button" id="print-look">인쇄 모양</button>
           <details class="more">
-            <summary>인쇄·저장</summary>
+            <summary>더보기</summary>
             <div class="more-row">
-              <button type="button" id="suspects">확인할 칸만</button>
-              <label class="inline"><input id="brand-sum" type="checkbox" /> 브랜드 소계</label>
+              <button type="button" id="orig">원래 순서</button>
+              <button type="button" id="print-look">인쇄 모양</button>
+              <label class="inline" title="열 이름이 있는 줄">
+                제목 줄
+                <input id="header-row" type="number" min="1" step="1" value="1" inputmode="numeric" />
+              </label>
               <label class="inline"><input id="hide-num" type="checkbox" /> 번호 숨김</label>
               <label class="inline"><input id="hide-ea" type="checkbox" checked /> EA 숨김</label>
               <label class="inline"><input id="hide-note" type="checkbox" checked /> 비고 숨김</label>
@@ -79,19 +77,21 @@
               </label>
               <button type="button" id="csv">CSV</button>
               <button type="button" id="xlsx">Excel</button>
+              <button type="button" id="clear" class="quiet">비우기</button>
             </div>
           </details>
         </div>
         <button type="button" id="screen-look" class="only-preview">검수 화면</button>
         <p class="sub" id="subtitle" hidden></p>
-        <p class="sub" id="customers" hidden></p>
         <p class="meta facts" id="status" aria-live="polite"></p>
         <p class="error" id="error" role="alert" hidden></p>
         <div class="shots noprint" id="shots" hidden></div>
         <div class="table-wrap" id="drop">
-          <p class="empty" id="empty">사진을 여기에 놓으면 규격순으로 모읍니다.</p>
+          <p class="empty" id="empty">사진을 여기에 놓거나 누르세요.
+같은 규격끼리 모읍니다.</p>
           <table id="grid" aria-describedby="status"></table>
         </div>
+        <p class="sub" id="customers" hidden></p>
       </section>
     </main>
     <script src="vendor/xlsx.full.min.js"></script>
