@@ -1,0 +1,279 @@
+.toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        align-items: center;
+        margin: 0.2rem 0 0.75rem;
+      }
+
+      .toolbar button,
+      .file-btn,
+      .only-preview {
+        font: inherit;
+        font-size: 0.98rem;
+        color: var(--ink);
+        background: var(--sheet);
+        border: 1px solid var(--line);
+        min-height: 2.5rem;
+        padding: 0.25rem 0.7rem;
+        cursor: pointer;
+      }
+
+      .toolbar button.primary {
+        background: var(--spine);
+        border-color: var(--spine);
+        color: var(--sheet);
+      }
+
+      .toolbar button.primary:hover {
+        background: #18574a;
+      }
+
+      .file-btn {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .file-btn input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .inline[hidden] {
+        display: none;
+      }
+
+      .toolbar input,
+      .toolbar select {
+        font: inherit;
+        color: var(--ink);
+        background: var(--sheet);
+        border: 1px solid var(--line);
+        min-height: 2.5rem;
+        padding: 0 0.4rem;
+      }
+
+      .toolbar input[type="number"] {
+        width: 4.2rem;
+      }
+
+      .grow {
+        flex: 1 1 1rem;
+      }
+
+      .toolbar button:focus-visible,
+      .file-btn:focus-within,
+      .only-preview:focus-visible,
+      .toolbar input:focus-visible,
+      .toolbar select:focus-visible,
+      th button:focus-visible {
+        outline: 2px solid var(--spine);
+        outline-offset: 2px;
+      }
+
+      .meta,
+      .sub {
+        margin: 0 0 0.55rem;
+        color: var(--quiet);
+        font-size: 0.98rem;
+      }
+
+      .error {
+        margin: 0 0 0.55rem;
+        color: #7a2e24;
+      }
+
+      .shots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin: 0 0 0.7rem;
+      }
+
+      .shots[hidden] {
+        display: none;
+      }
+
+      .shots img {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-height: 8.5rem;
+        background: white;
+        border: 1px solid var(--line);
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        background: var(--sheet);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .table-wrap.drag {
+        outline: 2px solid var(--spine);
+        outline-offset: -2px;
+      }
+
+      table {
+        width: max-content;
+        border-collapse: collapse;
+        font-size: 0.98rem;
+        line-height: 1.45;
+      }
+
+      th,
+      td {
+        padding: 0.15rem 0.55rem;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        white-space: nowrap;
+        vertical-align: middle;
+      }
+
+      th.num,
+      td.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      th {
+        font-weight: 700;
+        background: #e7ebe4;
+      }
+
+      th button {
+        display: block;
+        width: 100%;
+        min-height: 2.4rem;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        font-weight: 700;
+        text-align: inherit;
+        cursor: pointer;
+      }
+
+      th[aria-sort="ascending"] button,
+      th[aria-sort="descending"] button {
+        color: var(--spine);
+      }
+
+      tbody tr:hover td {
+        background: #eef2ea;
+      }
+
+      .only-preview {
+        display: none;
+      }
+
+      @media (min-width: 721px) {
+        th {
+          position: sticky;
+          top: 0;
+        }
+      }
+
+      body.as-print {
+        background: white;
+      }
+
+      body.as-print nav,
+      body.as-print .noprint,
+      body.as-print .lead,
+      body.as-print .notes,
+      body.as-print .skip {
+        display: none;
+      }
+
+      body.as-print .frame {
+        display: block;
+        border-left: 0;
+      }
+
+      body.as-print main {
+        max-width: 52rem;
+        margin: 0 auto;
+        padding: 1.1rem 1rem 2rem;
+      }
+
+      body.as-print .only-preview {
+        display: inline-block;
+        position: fixed;
+        top: 0.7rem;
+        right: 0.7rem;
+        z-index: 2;
+      }
+
+      body.as-print .table-wrap,
+      body.as-print th {
+        background: white;
+      }
+
+      body.as-print tbody tr:hover td {
+        background: transparent;
+      }
+
+      @media print {
+        nav,
+        .noprint,
+        .lead,
+        .notes,
+        .skip,
+        .only-preview {
+          display: none !important;
+        }
+
+        body {
+          background: white;
+          font-size: 11pt;
+        }
+
+        .frame {
+          display: block;
+          border: 0;
+        }
+
+        main {
+          padding: 0;
+        }
+
+        h1 {
+          font-size: 16pt;
+        }
+
+        .table-wrap {
+          overflow: visible;
+          background: white;
+          border: 0;
+        }
+
+        th {
+          position: static;
+          background: white;
+        }
+
+        tbody tr:hover td {
+          background: transparent;
+        }
+
+        tr {
+          break-inside: avoid;
+        }
+
+        @page {
+          size: A4;
+          margin: 12mm;
+        }
+      }

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko" data-root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>출고 지시서</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" />
+    <link rel="stylesheet" href="chulgo.css" />
+    <style>
+      :root {
+        --paper: #e6e8e3;
+        --sheet: #f4f5f1;
+        --ink: #1a2330;
+        --quiet: #31404a;
+        --spine: #1f6b5a;
+        --line: #c5cbc3;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: "Gowun Batang", "Apple SD Gothic Neo", serif;
+        font-size: 1.125rem;
+        line-height: 1.75;
+      }
+
+      main {
+        max-width: 52rem;
+        margin: 0 auto;
+        padding: 1.4rem 1rem 3rem;
+      }
+
+      h1 {
+        margin: 0 0 0.8rem;
+        font-size: 1.8rem;
+        line-height: 1.25;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>출고 지시서</h1>
+      <noscript>
+        <p>정렬과 파일 열기는 스크립트를 켜야 동작합니다.</p>
+      </noscript>
+      <section class="work" aria-label="정렬 화면">
+        <div class="toolbar noprint">
+          <label class="file-btn">
+            파일 열기
+            <input id="file" type="file" multiple accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.bmp,.heic,.heif,.csv,.tsv,.txt,.xlsx,.xls,text/csv" />
+          </label>
+          <button type="button" id="ex-pipe">배관 예시</button>
+          <button type="button" id="ex-other">다른 칸 예시</button>
+          <button type="button" id="orig">원래 순서</button>
+          <label class="inline">
+            제목 줄
+            <input id="header-row" type="number" min="1" step="1" value="1" inputmode="numeric" />
+          </label>
+          <label class="inline" id="sheet-label" hidden>
+            시트
+            <select id="sheet"></select>
+          </label>
+          <span class="grow"></span>
+          <button type="button" id="print-look">인쇄 모양</button>
+          <button type="button" id="print" class="primary">인쇄</button>
+        </div>
+        <button type="button" id="screen-look" class="only-preview">검수 화면</button>
+        <p class="meta" id="status" aria-live="polite"></p>
+        <p class="sub" id="subtitle" hidden></p>
+        <p class="error" id="error" role="alert" hidden></p>
+        <div class="shots noprint" id="shots" hidden></div>
+        <div class="table-wrap" id="drop">
+          <table id="grid" aria-describedby="status"></table>
+        </div>
+      </section>
+    </main>
+    <script src="vendor/xlsx.full.min.js"></script>
+    <script src="vendor/ocr/tesseract.min.js"></script>
+    <script src="chulgo.js"></script>
+  </body>
+</html>
