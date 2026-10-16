@@ -232,10 +232,11 @@ function render() {
         const map = readEdits();
         const oldKey = rowKey(item.row, heads);
         item.row[index] = next;
-        const patch = map[oldKey] || {};
+        const patch = Object.assign({}, map[oldKey] || {});
         patch[head || String(index)] = next;
-        delete map[oldKey];
-        map[rowKey(item.row, heads)] = Object.assign(map[rowKey(item.row, heads)] || {}, patch);
+        map[oldKey] = patch;
+        const newKey = rowKey(item.row, heads);
+        if (newKey !== oldKey) map[newKey] = Object.assign({}, map[newKey] || {}, patch);
         writeEdits(map);
         render();
       });
