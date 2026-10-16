@@ -1,34 +1,5 @@
 "use strict";
 
-const EXAMPLES = {
-  pipe: {
-    name: "배관 예시",
-    rows: [
-      ["품목", "수량", "규격", "BOX", "EA"],
-      ["300연", "24", "300mm/24", "2", "48"],
-      ["500연", "12", "500mm/12", "1", "12"],
-      ["엘보 20", "30", "20mm", "1", "30"],
-      ["엘보 100", "10", "100mm", "1", "10"],
-      ["1.6규격", "6", "1.6A", "3", "18"],
-      ["1000규격", "12", "1A", "3", "36"],
-      ["이경티 400", "20", "40mm", "1", "20"],
-      ["900연", "24", "270mm/24", "1", "24"],
-    ],
-  },
-  other: {
-    name: "다른 칸 예시",
-    rows: [
-      ["품명", "규격", "발주", "단위", "비고"],
-      ["엘보", "100A", "8", "개", ""],
-      ["엘보", "15A", "40", "개", "급행"],
-      ["레듀서", "50A", "12", "개", ""],
-      ["레듀서", "20A", "24", "개", ""],
-      ["니플", "1.6A", "6", "개", ""],
-      ["니플", "2A", "6", "개", "재고"],
-    ],
-  },
-};
-
 let grid = [];
 let sourceName = "";
 let fileLabel = "";
@@ -120,11 +91,6 @@ function headers() {
   return out;
 }
 
-function bodyRows() {
-  const start = headerIndex() + 1;
-  return grid.slice(start).filter((row) => row.some((cell) => String(cell).trim() !== ""));
-}
-
 function numericCols(rows, width) {
   const cols = new Set();
   for (let i = 0; i < width; i += 1) {
@@ -142,7 +108,13 @@ function numericCols(rows, width) {
 }
 
 function sortedBody() {
-  const rows = bodyRows().map((row, index) => ({ row, index }));
+  const start = headerIndex() + 1;
+  const rows = [];
+  for (let index = start; index < grid.length; index += 1) {
+    const row = grid[index];
+    if (!row.some((cell) => String(cell).trim() !== "")) continue;
+    rows.push({ row, index });
+  }
   if (sort.col == null) return rows;
   const col = sort.col;
   const dir = sort.dir;
@@ -176,13 +148,14 @@ function subtitleText() {
 }
 
 function render() {
+  persist();
   const table = document.getElementById("grid");
   const status = document.getElementById("status");
   const subtitle = document.getElementById("subtitle");
   table.replaceChildren();
   const start = headerIndex();
   if (!grid.length) {
-    status.textContent = sourceName ? sourceName + " · 읽은 줄 없음" : "열어 둔 파일이 없습니다.";
+    status.textContent = sourceName ? sourceName + " · 읽은 줄 없음" : "사진을 열어 주세요.";
     subtitle.hidden = true;
     return;
   }
@@ -241,10 +214,31 @@ function render() {
     num.className = "num";
     num.textContent = String(order + 1);
     tr.append(num);
-    heads.forEach((_, index) => {
+    heads.forEach((head, index) => {
       const td = document.createElement("td");
       if (nums.has(index)) td.classList.add("num");
       td.textContent = String(item.row[index] ?? "");
+      td.contentEditable = "true";
+      td.spellcheck = false;
+      td.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          td.blur();
+        }
+      });
+      td.addEventListener("blur", () => {
+        const next = td.textContent.replace(/\s+/g, " ").trim();
+        if (next === String(item.row[index] ?? "")) return;
+        const map = readEdits();
+        const oldKey = rowKey(item.row, heads);
+        item.row[index] = next;
+        const patch = map[oldKey] || {};
+        patch[head || String(index)] = next;
+        delete map[oldKey];
+        map[rowKey(item.row, heads)] = Object.assign(map[rowKey(item.row, heads)] || {}, patch);
+        writeEdits(map);
+        render();
+      });
       tr.append(td);
     });
     tbody.append(tr);
@@ -258,15 +252,170 @@ function toggleSort(index) {
   render();
 }
 
+// ponytail: this form's ㎖ is read as 00/08/01 and ℓ as 2 or 8. A real spec like 18/12 or code 109xxx would be rewritten; edit the cell if that day has one.
+function cleanSpec(value) {
+  let s = String(value || "").trim();
+  if (!s) return s;
+  s = s.replace(/7(24|20|12|6|4|2)$/, "/$1");
+  s = s.replace(/P-B0x/gi, "P-BOX");
+  s = s.replace(/(\d)\s*me(?=\s*\/)/gi, "$1ml");
+  s = s.replace(/(\d)\s*m\s*\|/gi, "$1ml");
+  s = s.replace(/(\d{2,4})0[018](?=\s*\/)/g, "$1ml");
+  s = s.replace(/(\d\.\d)[28](\s*\/?\s*)(24|20|12|6\+4|6|4|2)\b/g, "$1ℓ/$3");
+  s = s.replace(/^(\d)[28](\s*\/\s*)(24|20|12|6|4|2)$/, "$1ℓ$2$3");
+  s = s.replace(/(\d+(?:\.\d+)?)[Ll](\s+)(24|20|12|6|4|2)$/, "$1ℓ/$3");
+  s = s.replace(/\/\s*5\+4\b/g, "/6+4");
+  s = s.replace(/\s*\/\s*/g, "/");
+  return s;
+}
+
+function cleanCode(value) {
+  let s = String(value || "").trim().replace(/\.$/, "");
+  if (/^109\d{3}$/.test(s)) s = "100" + s.slice(3);
+  else if (/^108\d{3}$/.test(s)) s = "103" + s.slice(3);
+  else if (/^(\d{3})9(\d{3})$/.test(s)) s = s.slice(0, 3) + s.slice(4);
+  else if (/^100\d{2}$/.test(s)) s = "1000" + s.slice(3);
+  return s;
+}
+
+function cleanName(value) {
+  return String(value || "")
+    .replace(/스라미트/g, "카스라이트")
+    .replace(/참미슬/g, "참이슬")
+    .replace(/미즈백/g, "이즈백")
+    .replace(/라미트/g, "라이트")
+    .replace(/하미네켄/g, "하이네켄")
+    .replace(/클라무드/g, "클라우드")
+    .replace(/마사히드라미/g, "아사히드라이")
+    .replace(/첨하/g, "청하")
+    .replace(/데라/g, "테라")
+    .replace(/하미트/g, "하이트")
+    .replace(/『/g, "P")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// ponytail: trust the 품명 size only when the 규격 digit is the usual misread (8 for 6, 9 for 0/3/7).
+function nameWins(specNum, nameNum) {
+  if (specNum.length !== nameNum.length || specNum === nameNum) return false;
+  let diff = 0;
+  for (let i = 0; i < specNum.length; i += 1) {
+    if (specNum[i] === nameNum[i]) continue;
+    diff += 1;
+    const bad = specNum[i];
+    const good = nameNum[i];
+    const ok = (bad === "8" && good === "6") || (bad === "9" && "073".includes(good)) || (bad === "6" && good === "5") || (bad === "5" && good === "6");
+    if (!ok) return false;
+  }
+  return diff === 1;
+}
+
+function alignSpec(name, spec, qty) {
+  let s = cleanSpec(spec);
+  const sizes = String(name || "").match(/\d+(?:\.\d+)?/g) || [];
+  const bare = s.match(/^\/(24|20|12|6|4|2)$/);
+  if (bare) {
+    const n = sizes.find((v) => /^\d{3,4}$/.test(v));
+    if (n) s = n + "ml" + s;
+  }
+  const vol = s.match(/^(\d+(?:\.\d+)?)(?=ml|ℓ|\/)/);
+  if (vol) {
+    const better = sizes.find((v) => nameWins(vol[1], v));
+    if (better) s = better + s.slice(vol[1].length);
+  }
+  if (/ℓ\/4$/.test(s) && String(qty || "").trim() === "6") s = s.replace(/\/4$/, "/6");
+  return s;
+}
+
+function cleanSheet(rows, headerAt) {
+  const heads = rows[headerAt] || [];
+  const find = (re) => heads.findIndex((head) => re.test(normHead(head)));
+  const specAt = find(/규격/);
+  const codeAt = find(/코드/);
+  const nameAt = find(/품명|품목/);
+  const qtyAt = find(/입수|수량/);
+  heads.forEach((head, col) => {
+    const key = normHead(head);
+    if (key === "box" || key === "bok") heads[col] = "BOX";
+  });
+  for (let i = headerAt + 1; i < rows.length; i += 1) {
+    const row = rows[i];
+    for (let col = 0; col < row.length; col += 1) row[col] = String(row[col] || "").replace(/[?？]+$/g, "").trim();
+    if (nameAt >= 0) row[nameAt] = cleanName(row[nameAt]);
+    if (codeAt >= 0) row[codeAt] = cleanCode(row[codeAt]);
+    if (specAt >= 0) row[specAt] = alignSpec(row[nameAt] || "", row[specAt], qtyAt >= 0 ? row[qtyAt] : "");
+  }
+}
+
+function rowKey(row, heads) {
+  const codeAt = heads.findIndex((head) => normHead(head).includes("코드"));
+  const nameAt = heads.findIndex((head) => /품명|품목/.test(normHead(head)));
+  return (codeAt >= 0 ? row[codeAt] : "") + "\t" + (nameAt >= 0 ? row[nameAt] : "");
+}
+
+function readEdits() {
+  try {
+    return JSON.parse(localStorage.getItem("chulgo-edits") || "{}");
+  } catch (err) {
+    return {};
+  }
+}
+
+function writeEdits(map) {
+  try {
+    localStorage.setItem("chulgo-edits", JSON.stringify(map));
+  } catch (err) {
+    /* full */
+  }
+}
+
+function applyEdits(rows, headerAt) {
+  const heads = rows[headerAt] || [];
+  const map = readEdits();
+  for (let i = headerAt + 1; i < rows.length; i += 1) {
+    const patch = map[rowKey(rows[i], heads)];
+    if (!patch) continue;
+    heads.forEach((head, col) => {
+      if (patch[head] != null) rows[i][col] = patch[head];
+    });
+  }
+}
+
+function persist() {
+  try {
+    localStorage.setItem("chulgo-sheet", JSON.stringify({
+      rows: grid,
+      name: sourceName,
+      sort,
+      headerAt: headerIndex(),
+    }));
+  } catch (err) {
+    /* full */
+  }
+}
+
+function restore() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("chulgo-sheet") || "null");
+    if (!saved || !Array.isArray(saved.rows) || !saved.rows.length) return false;
+    grid = saved.rows.map((row) => (Array.isArray(row) ? row.map((cell) => String(cell ?? "")) : []));
+    sourceName = saved.name || "";
+    sort = saved.sort && Number.isInteger(saved.sort.col) ? saved.sort : { col: null, dir: 1 };
+    document.getElementById("header-row").value = String((saved.headerAt || 0) + 1);
+    restoreShots();
+    render();
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 function loadGrid(rows, name) {
   grid = rows.map((row) => (Array.isArray(row) ? row.map((cell) => (cell == null ? "" : String(cell))) : []));
   const at = headerIndex();
-  const specAt = (grid[at] || []).findIndex((head) => normHead(head).includes("규격"));
-  if (specAt >= 0) {
-    for (let i = at + 1; i < grid.length; i += 1) {
-      // ponytail: this sheet's "/" is often read as 7, so 724 means /24
-      if (grid[i][specAt]) grid[i][specAt] = grid[i][specAt].replace(/7(24|20|12|6|4|2)$/, "/$1");
-    }
+  if (grid[at]) {
+    cleanSheet(grid, at);
+    applyEdits(grid, at);
   }
   sourceName = name;
   applyAutoSort();
@@ -283,31 +432,77 @@ function hideShots() {
   const box = document.getElementById("shots");
   box.replaceChildren();
   box.hidden = true;
+  try {
+    localStorage.removeItem("chulgo-shots");
+  } catch (err) {
+    /* full */
+  }
+}
+
+function showShotImages(urls, names) {
+  const box = document.getElementById("shots");
+  box.replaceChildren();
+  urls.forEach((url, index) => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = (names && names[index]) || (index + 1) + "쪽 사진";
+    box.append(img);
+  });
+  box.hidden = urls.length === 0;
+}
+
+function shrinkShot(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 900 / (img.naturalWidth || img.width || 900));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+      canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve("");
+    };
+    img.src = url;
+  });
 }
 
 function showShots(files) {
   hideShots();
-  const box = document.getElementById("shots");
-  files.forEach((file, index) => {
-    const img = document.createElement("img");
+  const urls = files.map((file) => {
     const url = URL.createObjectURL(file);
     shotUrls.push(url);
-    img.src = url;
-    img.alt = (file.name || (index + 1) + "쪽") + " 사진";
-    box.append(img);
+    return url;
   });
-  box.hidden = files.length === 0;
+  showShotImages(urls, files.map((file, index) => (file.name || (index + 1) + "쪽") + " 사진"));
+  if (!files.length) return;
+  Promise.all(files.map(shrinkShot)).then((stored) => {
+    const keep = stored.filter(Boolean);
+    try {
+      localStorage.setItem("chulgo-shots", JSON.stringify(keep));
+    } catch (err) {
+      try {
+        localStorage.removeItem("chulgo-shots");
+      } catch (ignore) {
+        /* full */
+      }
+    }
+  });
 }
 
-function loadExample(key) {
-  workbook = null;
-  fileLabel = "";
-  document.getElementById("file").value = "";
-  document.getElementById("header-row").value = "1";
-  setSheets([], "");
-  showError("");
-  hideShots();
-  loadGrid(EXAMPLES[key].rows, EXAMPLES[key].name);
+function restoreShots() {
+  try {
+    const urls = JSON.parse(localStorage.getItem("chulgo-shots") || "[]");
+    if (!Array.isArray(urls) || !urls.length) return;
+    showShotImages(urls);
+  } catch (err) {
+    /* ignore */
+  }
 }
 
 function assetUrl(path) {
@@ -1090,8 +1285,6 @@ async function readFiles(fileList) {
   }
 }
 
-document.getElementById("ex-pipe").addEventListener("click", () => loadExample("pipe"));
-document.getElementById("ex-other").addEventListener("click", () => loadExample("other"));
 document.getElementById("orig").addEventListener("click", () => {
   sort = { col: null, dir: 1 };
   render();
@@ -1116,6 +1309,22 @@ document.getElementById("print-look").addEventListener("click", () => {
 document.getElementById("screen-look").addEventListener("click", () => {
   document.body.classList.remove("as-print");
 });
+document.getElementById("clear").addEventListener("click", () => {
+  grid = [];
+  sourceName = "";
+  sort = { col: null, dir: 1 };
+  workbook = null;
+  fileLabel = "";
+  setSheets([], "");
+  showError("");
+  hideShots();
+  try {
+    localStorage.removeItem("chulgo-sheet");
+  } catch (err) {
+    /* full */
+  }
+  render();
+});
 
 const drop = document.getElementById("drop");
 drop.addEventListener("dragover", (event) => {
@@ -1129,4 +1338,4 @@ drop.addEventListener("drop", (event) => {
   readFiles(event.dataTransfer && event.dataTransfer.files);
 });
 
-loadExample("pipe");
+if (!restore()) render();
